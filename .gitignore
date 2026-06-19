@@ -9,7 +9,7 @@ depth-anything/output/
 depth-anything/input/
 
 # Kinect captures
-kinect/captures/
+kinect/output/
 
 # Python
 __pycache__/

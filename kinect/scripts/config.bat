@@ -4,9 +4,6 @@
 :: -------------------------------------------------------
 set K4A_RECORDER=C:\Program Files\Azure Kinect SDK v1.4.1\tools\k4arecorder.exe
 
-:: Where recordings are saved.  Folder is created automatically if missing.
-set OUTPUT_DIR=%USERPROFILE%\Desktop\kinect-recordings
-
 :: -------------------------------------------------------
 :: RECORDING SETTINGS  (use configure.bat to change these)
 :: -------------------------------------------------------

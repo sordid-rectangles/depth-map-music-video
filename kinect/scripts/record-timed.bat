@@ -3,6 +3,7 @@
 setlocal
 call "%~dp0config.bat"
 
+set OUTPUT_DIR=%~dp0..\..\kinect\output
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 set /p FILENAME="Enter output filename (without extension, e.g. take-01): "

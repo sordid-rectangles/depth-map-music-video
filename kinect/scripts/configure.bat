@@ -9,40 +9,22 @@ echo ============================================================
 echo   KINECT RECORDING CONFIGURATION
 echo ============================================================
 echo.
-echo   1.  Output folder  :  %OUTPUT_DIR%
-echo   2.  Color mode     :  %COLOR_MODE%
-echo   3.  Depth mode     :  %DEPTH_MODE%
-echo   4.  Frame rate     :  %FRAME_RATE% fps
-echo   5.  IMU sensor     :  %IMU%
+echo   1.  Color mode  :  %COLOR_MODE%
+echo   2.  Depth mode  :  %DEPTH_MODE%
+echo   3.  Frame rate  :  %FRAME_RATE% fps
+echo   4.  IMU sensor  :  %IMU%
 echo.
 echo   S.  Save and exit
 echo   X.  Exit without saving
 echo.
-choice /c 12345SX /n /m "Choose a number to change it, or S to save: "
+choice /c 1234SX /n /m "Choose a number to change it, or S to save: "
 
-if errorlevel 7 goto EXIT_NOSAVE
-if errorlevel 6 goto SAVE
-if errorlevel 5 goto SET_IMU
-if errorlevel 4 goto SET_RATE
-if errorlevel 3 goto SET_DEPTH
-if errorlevel 2 goto SET_COLOR
-if errorlevel 1 goto SET_OUTPUT
-
-
-:SET_OUTPUT
-cls
-echo ============================================================
-echo   OUTPUT FOLDER
-echo ============================================================
-echo.
-echo   Current: %OUTPUT_DIR%
-echo.
-echo   Type a new folder path and press Enter.
-echo   (Leave blank to keep current setting.)
-echo.
-set /p NEW_DIR="  New folder: "
-if not "%NEW_DIR%"=="" set OUTPUT_DIR=%NEW_DIR%
-goto MAIN_MENU
+if errorlevel 6 goto EXIT_NOSAVE
+if errorlevel 5 goto SAVE
+if errorlevel 4 goto SET_IMU
+if errorlevel 3 goto SET_RATE
+if errorlevel 2 goto SET_DEPTH
+if errorlevel 1 goto SET_COLOR
 
 
 :SET_COLOR
@@ -77,10 +59,10 @@ echo ============================================================
 echo   DEPTH MODE
 echo ============================================================
 echo.
-echo   1.  WFOV 2x2 Binned   Wide angle, binned    (up to 30 fps)  *recommended*
-echo   2.  WFOV Full Res     Wide angle, full res  (up to 15 fps)
+echo   1.  WFOV 2x2 Binned   Wide angle, binned     (up to 30 fps)  *recommended*
+echo   2.  WFOV Full Res     Wide angle, full res   (up to 15 fps)
 echo   3.  NFOV Unbinned     Narrow angle, full res (up to 30 fps)
-echo   4.  NFOV 2x2 Binned   Narrow angle, binned  (up to 30 fps)
+echo   4.  NFOV 2x2 Binned   Narrow angle, binned   (up to 30 fps)
 echo   5.  Passive IR        IR only, no depth
 echo   6.  OFF               No depth stream
 echo.
@@ -139,22 +121,19 @@ goto MAIN_MENU
 
 
 :SAVE
-echo @echo off                                                           > "%CONFIG_FILE%"
-echo :: -------------------------------------------------------         >> "%CONFIG_FILE%"
-echo :: MACHINE SETUP  (a tech should verify this once per PC)          >> "%CONFIG_FILE%"
-echo :: -------------------------------------------------------         >> "%CONFIG_FILE%"
-echo set K4A_RECORDER=%K4A_RECORDER%                                    >> "%CONFIG_FILE%"
-echo.                                                                    >> "%CONFIG_FILE%"
-echo :: Where recordings are saved.                                      >> "%CONFIG_FILE%"
-echo set OUTPUT_DIR=%OUTPUT_DIR%                                         >> "%CONFIG_FILE%"
-echo.                                                                    >> "%CONFIG_FILE%"
-echo :: -------------------------------------------------------         >> "%CONFIG_FILE%"
-echo :: RECORDING SETTINGS  (use configure.bat to change these)         >> "%CONFIG_FILE%"
-echo :: -------------------------------------------------------         >> "%CONFIG_FILE%"
-echo set COLOR_MODE=%COLOR_MODE%                                         >> "%CONFIG_FILE%"
-echo set DEPTH_MODE=%DEPTH_MODE%                                         >> "%CONFIG_FILE%"
-echo set FRAME_RATE=%FRAME_RATE%                                         >> "%CONFIG_FILE%"
-echo set IMU=%IMU%                                                       >> "%CONFIG_FILE%"
+echo @echo off > "%CONFIG_FILE%"
+echo :: ------------------------------------------------------- >> "%CONFIG_FILE%"
+echo :: MACHINE SETUP  (a tech should verify this once per PC) >> "%CONFIG_FILE%"
+echo :: ------------------------------------------------------- >> "%CONFIG_FILE%"
+echo set K4A_RECORDER=%K4A_RECORDER% >> "%CONFIG_FILE%"
+echo. >> "%CONFIG_FILE%"
+echo :: ------------------------------------------------------- >> "%CONFIG_FILE%"
+echo :: RECORDING SETTINGS  (use configure.bat to change these) >> "%CONFIG_FILE%"
+echo :: ------------------------------------------------------- >> "%CONFIG_FILE%"
+echo set COLOR_MODE=%COLOR_MODE% >> "%CONFIG_FILE%"
+echo set DEPTH_MODE=%DEPTH_MODE% >> "%CONFIG_FILE%"
+echo set FRAME_RATE=%FRAME_RATE% >> "%CONFIG_FILE%"
+echo set IMU=%IMU% >> "%CONFIG_FILE%"
 
 echo.
 echo Settings saved.
