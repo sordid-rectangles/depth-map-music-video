@@ -9,114 +9,64 @@ echo ============================================================
 echo   KINECT RECORDING CONFIGURATION
 echo ============================================================
 echo.
-echo   1.  Color mode  :  %COLOR_MODE%
-echo   2.  Depth mode  :  %DEPTH_MODE%
-echo   3.  Frame rate  :  %FRAME_RATE% fps
-echo   4.  IMU sensor  :  %IMU%
+echo   Active preset : %PRESET_NAME%
+echo   Color         : %COLOR_MODE%
+echo   Depth         : %DEPTH_MODE%
+echo   Frame rate    : %FRAME_RATE% fps
+echo   IMU sensor    : %IMU%
+echo.
+echo   --- Presets (all wide-angle, 30 fps) ---
+echo   1.  Primary        1440p (2K) color  +  WFOV 2x2 binned depth  *default*
+echo   2.  Hero Shot      2160p (4K) color  +  WFOV 2x2 binned depth
+echo   3.  Long Take      1080p color       +  WFOV 2x2 binned depth  (smaller files)
+echo   4.  Depth Ref      no color          +  WFOV 2x2 binned depth  (VFX/comp pass)
+echo.
+echo   5.  Toggle IMU sensor (currently: %IMU%)
 echo.
 echo   S.  Save and exit
 echo   X.  Exit without saving
 echo.
-choice /c 1234SX /n /m "Choose a number to change it, or S to save: "
+choice /c 12345SX /n /m "Choose: "
 
-if errorlevel 6 goto EXIT_NOSAVE
-if errorlevel 5 goto SAVE
-if errorlevel 4 goto SET_IMU
-if errorlevel 3 goto SET_RATE
-if errorlevel 2 goto SET_DEPTH
-if errorlevel 1 goto SET_COLOR
+if errorlevel 7 goto EXIT_NOSAVE
+if errorlevel 6 goto SAVE
+if errorlevel 5 goto TOGGLE_IMU
+if errorlevel 4 goto PRESET_DEPTH_REF
+if errorlevel 3 goto PRESET_LONG_TAKE
+if errorlevel 2 goto PRESET_HERO
+if errorlevel 1 goto PRESET_PRIMARY
 
 
-:SET_COLOR
-cls
-echo ============================================================
-echo   COLOR MODE
-echo ============================================================
-echo.
-echo   1.  3072p    (4:3,  4K+,  max 15 fps)
-echo   2.  2160p    (16:9, 4K,   max 30 fps)
-echo   3.  1440p    (16:9,       max 30 fps)  *recommended*
-echo   4.  1080p    (16:9,       max 30 fps)
-echo   5.  720p     (16:9,       max 30 fps)
-echo   6.  OFF      (no color stream)
-echo.
-echo   Current: %COLOR_MODE%
-echo.
-choice /c 123456 /n /m "Choose: "
-
-if errorlevel 6 set COLOR_MODE=OFF
-if errorlevel 5 if not errorlevel 6 set COLOR_MODE=720p
-if errorlevel 4 if not errorlevel 5 set COLOR_MODE=1080p
-if errorlevel 3 if not errorlevel 4 set COLOR_MODE=1440p
-if errorlevel 2 if not errorlevel 3 set COLOR_MODE=2160p
-if errorlevel 1 if not errorlevel 2 set COLOR_MODE=3072p
+:PRESET_PRIMARY
+set PRESET_NAME=Primary
+set COLOR_MODE=1440p
+set DEPTH_MODE=WFOV_2X2BINNED
+set FRAME_RATE=30
 goto MAIN_MENU
 
-
-:SET_DEPTH
-cls
-echo ============================================================
-echo   DEPTH MODE
-echo ============================================================
-echo.
-echo   1.  WFOV 2x2 Binned   Wide angle, binned     (up to 30 fps)  *recommended*
-echo   2.  WFOV Full Res     Wide angle, full res   (up to 15 fps)
-echo   3.  NFOV Unbinned     Narrow angle, full res (up to 30 fps)
-echo   4.  NFOV 2x2 Binned   Narrow angle, binned   (up to 30 fps)
-echo   5.  Passive IR        IR only, no depth
-echo   6.  OFF               No depth stream
-echo.
-echo   Current: %DEPTH_MODE%
-echo.
-choice /c 123456 /n /m "Choose: "
-
-if errorlevel 6 set DEPTH_MODE=OFF
-if errorlevel 5 if not errorlevel 6 set DEPTH_MODE=PASSIVE_IR
-if errorlevel 4 if not errorlevel 5 set DEPTH_MODE=NFOV_2X2BINNED
-if errorlevel 3 if not errorlevel 4 set DEPTH_MODE=NFOV_UNBINNED
-if errorlevel 2 if not errorlevel 3 set DEPTH_MODE=WFOV_UNBINNED
-if errorlevel 1 if not errorlevel 2 set DEPTH_MODE=WFOV_2X2BINNED
+:PRESET_HERO
+set PRESET_NAME=Hero Shot
+set COLOR_MODE=2160p
+set DEPTH_MODE=WFOV_2X2BINNED
+set FRAME_RATE=30
 goto MAIN_MENU
 
-
-:SET_RATE
-cls
-echo ============================================================
-echo   FRAME RATE
-echo ============================================================
-echo.
-echo   Note: WFOV Full Res depth mode is limited to 15 fps max.
-echo         3072p color is limited to 15 fps max.
-echo.
-echo   1.  30 fps
-echo   2.  15 fps
-echo   3.   5 fps
-echo.
-echo   Current: %FRAME_RATE% fps
-echo.
-choice /c 123 /n /m "Choose: "
-
-if errorlevel 3 set FRAME_RATE=5
-if errorlevel 2 if not errorlevel 3 set FRAME_RATE=15
-if errorlevel 1 if not errorlevel 2 set FRAME_RATE=30
+:PRESET_LONG_TAKE
+set PRESET_NAME=Long Take
+set COLOR_MODE=1080p
+set DEPTH_MODE=WFOV_2X2BINNED
+set FRAME_RATE=30
 goto MAIN_MENU
 
+:PRESET_DEPTH_REF
+set PRESET_NAME=Depth Ref
+set COLOR_MODE=OFF
+set DEPTH_MODE=WFOV_2X2BINNED
+set FRAME_RATE=30
+goto MAIN_MENU
 
-:SET_IMU
-cls
-echo ============================================================
-echo   IMU SENSOR  (accelerometer + gyroscope)
-echo ============================================================
-echo.
-echo   1.  OFF   (recommended for most shoots)
-echo   2.  ON    (records motion data alongside footage)
-echo.
-echo   Current: %IMU%
-echo.
-choice /c 12 /n /m "Choose: "
-
-if errorlevel 2 set IMU=ON
-if errorlevel 1 if not errorlevel 2 set IMU=OFF
+:TOGGLE_IMU
+if "%IMU%"=="OFF" (set IMU=ON) else (set IMU=OFF)
 goto MAIN_MENU
 
 
@@ -130,6 +80,7 @@ echo. >> "%CONFIG_FILE%"
 echo :: ------------------------------------------------------- >> "%CONFIG_FILE%"
 echo :: RECORDING SETTINGS  (use configure.bat to change these) >> "%CONFIG_FILE%"
 echo :: ------------------------------------------------------- >> "%CONFIG_FILE%"
+echo set PRESET_NAME=%PRESET_NAME% >> "%CONFIG_FILE%"
 echo set COLOR_MODE=%COLOR_MODE% >> "%CONFIG_FILE%"
 echo set DEPTH_MODE=%DEPTH_MODE% >> "%CONFIG_FILE%"
 echo set FRAME_RATE=%FRAME_RATE% >> "%CONFIG_FILE%"
