@@ -11,6 +11,9 @@ depth-anything/input/
 # Kinect captures
 kinect/output/
 
+# Machine-specific external drive config
+kinect/scripts/external-output.bat
+
 # Python
 __pycache__/
 *.py[cod]

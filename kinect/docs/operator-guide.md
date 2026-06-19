@@ -12,7 +12,9 @@ This guide is written for non-technical team members operating the Kinect camera
 C:\Program Files\Azure Kinect SDK v1.4.1\tools\k4arecorder.exe
 ```
 
-**2. Set the output folder (optional).** Recordings default to `Desktop\kinect-recordings`. To change any recording settings, double-click **`configure.bat`**.
+**2. Set the external drive path (shoot day).** If recording to an external SSD, double-click **`set-output.bat`** and paste in the drive path (e.g. `E:\kinect-recordings`). The record scripts will then prompt at launch to choose between the default folder and the external drive. Run `set-output.bat` again and leave the path blank to clear it after the shoot.
+
+**3. Change recording settings (optional).** Double-click **`configure.bat`** to adjust color mode, depth mode, frame rate, or IMU.
 
 Operators don't need to touch any config files after this.
 

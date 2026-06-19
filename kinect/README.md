@@ -12,12 +12,13 @@ CLI tools wrapping `k4arecorder.exe` from the Azure Kinect SDK for on-set use by
 
 | Script | Use |
 |--------|-----|
-| [`scripts/configure.bat`](scripts/configure.bat) | Change recording settings (color, depth, fps, output folder) |
+| [`scripts/configure.bat`](scripts/configure.bat) | Change recording settings (color, depth, fps, IMU) |
+| [`scripts/set-output.bat`](scripts/set-output.bat) | Set or clear the external drive output path |
 | [`scripts/list-devices.bat`](scripts/list-devices.bat) | Confirm the Kinect is recognized before shooting |
 | [`scripts/record.bat`](scripts/record.bat) | Start recording until you press Ctrl-C |
 | [`scripts/record-timed.bat`](scripts/record-timed.bat) | Record for a set number of seconds |
 
-Recordings save to `%USERPROFILE%\Desktop\kinect-recordings` by default (configurable via `configure.bat`).
+Recordings default to `kinect/output/`. If an external drive path has been set via `set-output.bat`, the record scripts will prompt to choose between default and external at launch.
 
 ## Non-technical operators
 
