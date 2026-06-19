@@ -3,6 +3,7 @@
 :: Settings: RGB 1440p, depth WFOV_2X2BINNED, 30fps, IMU off. No audio (k4arecorder never records audio).
 
 setlocal
+call "%~dp0config.bat"
 
 set /p FILENAME="Enter output filename (without extension, e.g. take-01): "
 if "%FILENAME%"=="" (
@@ -18,7 +19,7 @@ echo Recording to %OUTPUT%
 echo Press Ctrl-C to stop recording.
 echo.
 
-k4arecorder.exe -c 1440p -d WFOV_2X2BINNED -r 30 --imu OFF "%OUTPUT%"
+"%K4A_RECORDER%" -c 1440p -d WFOV_2X2BINNED -r 30 --imu OFF "%OUTPUT%"
 
 echo.
 echo Recording saved to %OUTPUT%

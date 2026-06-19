@@ -1,6 +1,7 @@
 @echo off
+call "%~dp0config.bat"
 echo Listing connected Azure Kinect devices...
 echo.
-k4arecorder.exe --list
+"%K4A_RECORDER%" --list
 echo.
 pause

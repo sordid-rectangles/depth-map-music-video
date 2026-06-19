@@ -4,7 +4,17 @@ This guide is written for non-technical team members operating the Kinect camera
 
 ---
 
-## Before you start
+## Before you start (one-time setup by a technical team member)
+
+Open `kinect\scripts\config.bat` in Notepad and confirm the path matches where the Azure Kinect SDK is installed on this machine. The default is:
+
+```
+C:\Program Files\Azure Kinect SDK v1.4.1\tools\k4arecorder.exe
+```
+
+If the SDK was installed to a different folder, update that line and save. Operators don't need to touch this file again.
+
+## On set
 
 1. Plug the Kinect into a **USB 3** port (the blue ones).
 2. Make sure the device is recognized by Windows (you'll hear the usual USB connect sound).
@@ -77,7 +87,7 @@ Each `.mkv` file contains:
 
 | Problem | Try this |
 |---------|----------|
-| "k4arecorder is not recognized" | The Kinect SDK tools folder isn't in your PATH. Ask a technical team member to add `C:\Program Files\Azure Kinect SDK v1.4.x\tools\` to the system PATH. |
+| "The system cannot find the path specified" | The path in `scripts\config.bat` doesn't match where the SDK is installed on this machine. A technical team member should open `config.bat` in Notepad and update the path. |
 | "Found 0 connected devices" | Unplug and replug. Use USB 3 (blue port). Avoid USB hubs. |
 | Black color image | Try the Azure Kinect Viewer app to adjust exposure before recording. |
 | Recording stops immediately | Check available disk space. |
