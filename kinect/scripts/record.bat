@@ -1,9 +1,9 @@
 @echo off
-:: Prompts for an output filename then records until Ctrl-C.
-:: Settings: RGB 1440p, depth WFOV_2X2BINNED, 30fps, IMU off. No audio (k4arecorder never records audio).
-
+:: Records until you press Ctrl-C.  Settings come from config.bat.
 setlocal
 call "%~dp0config.bat"
+
+if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 set /p FILENAME="Enter output filename (without extension, e.g. take-01): "
 if "%FILENAME%"=="" (
@@ -12,14 +12,19 @@ if "%FILENAME%"=="" (
     exit /b 1
 )
 
-set OUTPUT=%FILENAME%.mkv
+set OUTPUT=%OUTPUT_DIR%\%FILENAME%.mkv
 
 echo.
-echo Recording to %OUTPUT%
+echo Color   : %COLOR_MODE%
+echo Depth   : %DEPTH_MODE%
+echo Rate    : %FRAME_RATE% fps
+echo IMU     : %IMU%
+echo Saving to: %OUTPUT%
+echo.
 echo Press Ctrl-C to stop recording.
 echo.
 
-"%K4A_RECORDER%" -c 1440p -d WFOV_2X2BINNED -r 30 --imu OFF "%OUTPUT%"
+"%K4A_RECORDER%" -c %COLOR_MODE% -d %DEPTH_MODE% -r %FRAME_RATE% --imu %IMU% "%OUTPUT%"
 
 echo.
 echo Recording saved to %OUTPUT%

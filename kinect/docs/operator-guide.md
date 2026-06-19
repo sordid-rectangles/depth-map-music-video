@@ -6,13 +6,15 @@ This guide is written for non-technical team members operating the Kinect camera
 
 ## Before you start (one-time setup by a technical team member)
 
-Open `kinect\scripts\config.bat` in Notepad and confirm the path matches where the Azure Kinect SDK is installed on this machine. The default is:
+**1. Set the SDK path.** Open `kinect\scripts\config.bat` in Notepad and confirm the path to `k4arecorder.exe` matches the installed SDK version on this machine. The default is:
 
 ```
 C:\Program Files\Azure Kinect SDK v1.4.1\tools\k4arecorder.exe
 ```
 
-If the SDK was installed to a different folder, update that line and save. Operators don't need to touch this file again.
+**2. Set the output folder (optional).** Recordings default to `Desktop\kinect-recordings`. To change any recording settings, double-click **`configure.bat`**.
+
+Operators don't need to touch any config files after this.
 
 ## On set
 

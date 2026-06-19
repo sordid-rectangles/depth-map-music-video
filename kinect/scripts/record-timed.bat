@@ -1,9 +1,9 @@
 @echo off
-:: Prompts for a filename and duration, then records for exactly N seconds.
-:: Settings: RGB 1440p, depth WFOV_2X2BINNED, 30fps, IMU off. No audio (k4arecorder never records audio).
-
+:: Records for a fixed number of seconds.  Settings come from config.bat.
 setlocal
 call "%~dp0config.bat"
+
+if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 set /p FILENAME="Enter output filename (without extension, e.g. take-01): "
 if "%FILENAME%"=="" (
@@ -19,13 +19,18 @@ if "%SECONDS%"=="" (
     exit /b 1
 )
 
-set OUTPUT=%FILENAME%.mkv
+set OUTPUT=%OUTPUT_DIR%\%FILENAME%.mkv
 
 echo.
-echo Recording %SECONDS% seconds to %OUTPUT% ...
+echo Color   : %COLOR_MODE%
+echo Depth   : %DEPTH_MODE%
+echo Rate    : %FRAME_RATE% fps
+echo IMU     : %IMU%
+echo Duration: %SECONDS% seconds
+echo Saving to: %OUTPUT%
 echo.
 
-"%K4A_RECORDER%" -c 1440p -d WFOV_2X2BINNED -r 30 --imu OFF -l %SECONDS% "%OUTPUT%"
+"%K4A_RECORDER%" -c %COLOR_MODE% -d %DEPTH_MODE% -r %FRAME_RATE% --imu %IMU% -l %SECONDS% "%OUTPUT%"
 
 echo.
 echo Done. Recording saved to %OUTPUT%
