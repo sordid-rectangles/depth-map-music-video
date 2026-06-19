@@ -1,0 +1,22 @@
+# Recorded footage (large binary files — store externally)
+*.mkv
+*.mp4
+*.mov
+*.avi
+
+# Depth Anything outputs
+depth-anything/output/
+depth-anything/input/
+
+# Kinect captures
+kinect/captures/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
