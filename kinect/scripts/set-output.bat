@@ -26,6 +26,10 @@ echo   Leave blank and press Enter to clear the external drive setting.
 echo.
 set /p NEW_PATH="  Path: "
 
+:: Trim trailing spaces from pasted path
+:TRIM
+if "%NEW_PATH:~-1%"==" " set "NEW_PATH=%NEW_PATH:~0,-1%" & goto TRIM
+
 if "%NEW_PATH%"=="" (
     if exist "%EXT_CONFIG%" del "%EXT_CONFIG%"
     echo.
