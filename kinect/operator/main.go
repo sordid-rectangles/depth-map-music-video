@@ -249,6 +249,7 @@ func (m model) startRecording(durationSecs int) (tea.Model, tea.Cmd) {
 	args = append(args, outputPath)
 
 	cmd := exec.Command(m.config.RecorderPath, args...)
+	setCmdAttrs(cmd)
 	if err := cmd.Start(); err != nil {
 		m.statusMsg = errorStyle.Render("Failed to start recorder: " + err.Error())
 		m.screen = screenMain
@@ -267,9 +268,9 @@ func (m model) startRecording(durationSecs int) (tea.Model, tea.Cmd) {
 func (m model) handleRecordingKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "Q", "ctrl+c":
-		if m.cmd != nil && m.cmd.Process != nil {
+		if m.cmd != nil && m.cmd.Process != nil && !m.userStopped {
 			m.userStopped = true
-			m.cmd.Process.Kill()
+			gracefulStop(m.cmd)
 		}
 	}
 	return m, nil
@@ -408,7 +409,11 @@ func (m model) viewRecording() string {
 		b.WriteString(fmt.Sprintf("  %s  %s\n", labelStyle.Render("Elapsed:"), titleStyle.Render(fmtDuration(m.elapsed))))
 	}
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render("  [Q] or [Ctrl+C] to stop") + "\n")
+	if m.userStopped {
+		b.WriteString(dimStyle.Render("  Stopping — finalizing file...") + "\n")
+	} else {
+		b.WriteString(dimStyle.Render("  [Q] or [Ctrl+C] to stop") + "\n")
+	}
 	return b.String()
 }
 
