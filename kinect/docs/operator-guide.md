@@ -1,89 +1,64 @@
-# On-set Operator Guide — Azure Kinect DK
+# Operator Guide — Azure Kinect DK
 
-This guide is written for non-technical team members operating the Kinect camera on set.
+For non-technical team members. The short version is in [`kinect/README.md`](../README.md).
 
 ---
 
-## Before you start (one-time setup by a technical team member)
+## One-time setup (done by a technical team member)
 
-**1. Set the SDK path.** Open `kinect\scripts\config.bat` in Notepad and confirm the path to `k4arecorder.exe` matches the installed SDK version on this machine. The default is:
-
+**1. Confirm the SDK is installed.**
+The tool expects `k4arecorder.exe` at:
 ```
-C:\Program Files\Azure Kinect SDK v1.4.1\tools\k4arecorder.exe
+C:\Program Files\Azure Kinect SDK v1.4.2\tools\k4arecorder.exe
 ```
+If the SDK version on the machine differs, open `operator-config.json` (next to `operator.exe`) in Notepad and update the `recorder_path` value.
 
-**2. Set the external drive path (shoot day).** If recording to an external SSD, double-click **`set-output.bat`** and paste in the drive path (e.g. `E:\kinect-recordings`). The record scripts will then prompt at launch to choose between the default folder and the external drive. Run `set-output.bat` again and leave the path blank to clear it after the shoot.
+**2. Set the output folder.**
+Launch `operator.exe`, press **4**, and paste in the path to the recording folder (e.g. `E:\CHIPPYKINECT`). Press Enter to save. This persists across sessions.
 
-**3. Change recording settings (optional).** Double-click **`configure.bat`** to adjust color mode, depth mode, frame rate, or IMU.
+**3. Choose a recording preset (optional).**
+Press **3** in the menu to select a preset. The default is **Long Take** (1080p / 30fps).
 
-Operators don't need to touch any config files after this.
+---
 
 ## On set
 
-1. Plug the Kinect into a **USB 3** port (the blue ones).
-2. Make sure the device is recognized by Windows (you'll hear the usual USB connect sound).
-3. Open **File Explorer** and navigate to the `kinect\scripts` folder.
+1. Plug the Kinect into a **USB 3** port (blue — not USB 2, not a hub).
+2. Wait for Windows to recognize the device (USB connect sound).
+3. Double-click **`operator.exe`**.
 
 ---
 
-## Step 1 — Confirm the Kinect is connected
+## Recording a take
 
-Double-click **`list-devices.bat`**.
+**Open-ended recording:**
 
-You should see something like:
+1. Press `1`.
+2. Enter a take number (e.g. `3`), press Enter.
+3. The file name and output path are shown on screen. Recording starts immediately.
+4. Press **Q** to stop. The tool finalizes the file before returning to the menu — wait for it.
 
-```
-Found 1 connected devices:
-  Device 0: ...
-```
+**Timed recording:**
 
-If it says "Found 0 connected devices", unplug and replug the Kinect and try again.
+1. Press `2`.
+2. Enter a take number, press Enter.
+3. Enter a duration in seconds (e.g. `30`), press Enter.
+4. Recording stops and saves automatically.
 
----
-
-## Step 2 — Record a take
-
-### Option A: Record until you're done (open-ended)
-
-Double-click **`record.bat`**.
-
-- Type a filename when asked, e.g. `scene-02-take-01`, then press Enter.
-- Recording starts immediately.
-- **Press Ctrl-C** to stop.
-- The file is saved as `scene-02-take-01.mkv` in the same folder.
-
-### Option B: Record for a fixed number of seconds
-
-Double-click **`record-timed.bat`**.
-
-- Type a filename, press Enter.
-- Type the number of seconds (e.g. `30`), press Enter.
-- Recording stops automatically.
+Files are saved as `take-03-20260622-175023.mkv` — take number plus a timestamp for uniqueness.
 
 ---
 
-## File naming convention
+## Presets
 
-Use lowercase with hyphens:
+| Preset | Color | Depth | FPS | Use for |
+|--------|-------|-------|-----|---------|
+| Primary | 1440p | WFOV 2×2 | 30 | General use |
+| Hero Shot | 2160p (4K) | WFOV 2×2 | 30 | Key close-ups |
+| Long Take | 1080p | WFOV 2×2 | 30 | Extended takes, smaller files |
+| Depth Ref | Off | WFOV 2×2 | 30 | Depth-only VFX pass |
 
-```
-scene-<number>-take-<number>.mkv
-```
-
-Examples: `scene-01-take-01.mkv`, `scene-03-take-02.mkv`
-
----
-
-## What gets recorded
-
-Each `.mkv` file contains:
-
-| Stream | Settings |
-|--------|----------|
-| RGB color | 1440p @ 30fps |
-| Depth | WFOV 2×2 binned @ 30fps |
-| IMU (motion sensor) | Off |
-| Audio | Not recorded (k4arecorder never captures audio) |
+Change preset with **3** in the main menu. Takes effect immediately — no restart needed.
 
 ---
 
@@ -91,13 +66,14 @@ Each `.mkv` file contains:
 
 | Problem | Try this |
 |---------|----------|
-| "The system cannot find the path specified" | The path in `scripts\config.bat` doesn't match where the SDK is installed on this machine. A technical team member should open `config.bat` in Notepad and update the path. |
-| "Found 0 connected devices" | Unplug and replug. Use USB 3 (blue port). Avoid USB hubs. |
-| Black color image | Try the Azure Kinect Viewer app to adjust exposure before recording. |
-| Recording stops immediately | Check available disk space. |
+| "Failed to start recorder" | The `recorder_path` in `operator-config.json` doesn't match the installed SDK. Update the path. |
+| Kinect not responding | Unplug and replug into a USB 3 (blue) port. Avoid USB hubs. |
+| Black color image | Open **Azure Kinect Viewer** (`k4aviewer.exe` in the SDK tools folder) and adjust exposure before recording. |
+| "File already exists" | The tool detected a name collision — edit the take number and try again. |
+| Recording stops immediately | Check available disk space on the output drive. |
 
 ---
 
 ## After the shoot
 
-Copy the `.mkv` files to the shared drive as soon as possible — they are large files and should not stay on the local machine.
+Copy `.mkv` files to the shared drive as soon as possible. They are large files and should not stay on the local machine.
