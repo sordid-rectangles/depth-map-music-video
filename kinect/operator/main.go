@@ -177,7 +177,7 @@ func (m model) openFilenameInput(timed bool) (tea.Model, tea.Cmd) {
 	m.statusMsg = ""
 	m.isTimedRecord = timed
 	m.input.Placeholder = "e.g. scene-01-take-01"
-	m.input.SetValue("")
+	m.input.SetValue("take-" + time.Now().Format("20060102-150405"))
 	m.input.Focus()
 	m.screen = screenFilename
 	return m, textinput.Blink
@@ -247,6 +247,14 @@ func (m model) startRecording(durationSecs int) (tea.Model, tea.Cmd) {
 		args = append(args, "-l", strconv.Itoa(durationSecs))
 	}
 	args = append(args, outputPath)
+
+	if _, err := os.Stat(outputPath); err == nil {
+		m.statusMsg = errorStyle.Render("File already exists: " + m.pendingFilename + ".mkv — rename and try again")
+		m.input.SetValue(m.pendingFilename)
+		m.input.Focus()
+		m.screen = screenFilename
+		return m, textinput.Blink
+	}
 
 	cmd := exec.Command(m.config.RecorderPath, args...)
 	setCmdAttrs(cmd)
@@ -375,6 +383,9 @@ func (m model) viewFilename() string {
 	b.WriteString(titleStyle.Render(heading) + "\n\n")
 	b.WriteString("  Filename (no extension):\n\n")
 	b.WriteString("  " + m.input.View() + "\n\n")
+	if m.statusMsg != "" {
+		b.WriteString("  " + m.statusMsg + "\n\n")
+	}
 	b.WriteString(dimStyle.Render("  [Enter] Continue   [Esc] Cancel") + "\n")
 	return b.String()
 }
