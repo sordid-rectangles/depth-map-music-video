@@ -12,7 +12,7 @@ if exist "%~dp0external-output.bat" call "%~dp0external-output.bat"
 set OUTPUT_DIR=%DEFAULT_OUTPUT_DIR%
 if "%EXTERNAL_OUTPUT_DIR%"=="" goto SKIP_EXTERNAL
 
-for %%P in ("%EXTERNAL_OUTPUT_DIR%") do if exist "%%~dP\" goto EXTERNAL_AVAILABLE
+if exist "%EXTERNAL_OUTPUT_DIR%\" goto EXTERNAL_AVAILABLE
 echo.
 echo WARNING: External drive not found ^(%EXTERNAL_OUTPUT_DIR%^)
 echo The drive letter may have changed. Run set-output.bat to update the path.
