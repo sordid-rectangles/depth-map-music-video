@@ -176,8 +176,8 @@ func (m model) handleMainKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) openFilenameInput(timed bool) (tea.Model, tea.Cmd) {
 	m.statusMsg = ""
 	m.isTimedRecord = timed
-	m.input.Placeholder = "e.g. scene-01-take-01"
-	m.input.SetValue("take-" + time.Now().Format("20060102-150405"))
+	m.input.Placeholder = "e.g. 1"
+	m.input.SetValue("")
 	m.input.Focus()
 	m.screen = screenFilename
 	return m, textinput.Blink
@@ -191,11 +191,15 @@ func (m model) handleFilenameKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.screen = screenMain
 		return m, nil
 	case tea.KeyEnter:
-		filename := strings.TrimSpace(m.input.Value())
-		if filename == "" {
+		take := strings.TrimSpace(m.input.Value())
+		if take == "" {
 			return m, nil
 		}
-		m.pendingFilename = filename
+		if n, err := strconv.Atoi(take); err == nil {
+			m.pendingFilename = fmt.Sprintf("take-%02d-%s", n, time.Now().Format("20060102-150405"))
+		} else {
+			m.pendingFilename = fmt.Sprintf("take-%s-%s", take, time.Now().Format("20060102-150405"))
+		}
 		if m.isTimedRecord {
 			m.input.Placeholder = "seconds, e.g. 30"
 			m.input.SetValue("")
@@ -381,7 +385,7 @@ func (m model) viewFilename() string {
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(titleStyle.Render(heading) + "\n\n")
-	b.WriteString("  Filename (no extension):\n\n")
+	b.WriteString("  Take number:\n\n")
 	b.WriteString("  " + m.input.View() + "\n\n")
 	if m.statusMsg != "" {
 		b.WriteString("  " + m.statusMsg + "\n\n")
