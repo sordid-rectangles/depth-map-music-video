@@ -21,12 +21,12 @@ Multiple takes in one call:
 uv run export.py take-01-*.mkv take-02-*.mkv --out E:\EXPORTS
 ```
 
-Flags (all streams export by default):
+Flags (color, depth, and depth_aligned export by default):
 
 | Flag | Effect |
 |------|--------|
 | `--no-color` | Skip color frames |
-| `--no-ir` | Skip IR frames |
+| `--ir` | Include IR frames (off by default) |
 | `--no-depth-aligned` | Skip color-aligned depth (also skipped automatically if the recording has no color track, e.g. the `Depth Ref` preset) |
 
 ## Output layout
@@ -37,7 +37,7 @@ Flags (all streams export by default):
     depth/            frame_000001.exr   raw depth, depth-camera space, float32 mm
     depth_aligned/    frame_000001.exr   depth reprojected into color-camera space
     color/            frame_000001.png
-    ir/               frame_000001.exr
+    ir/               frame_000001.exr   (only when exported with --ir)
     calibration.json
     manifest.json
 ```

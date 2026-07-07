@@ -5,6 +5,8 @@
 #   "pyk4a",
 #   "opencv-python",
 #   "numpy",
+#   "openexr",
+#   "imath",
 # ]
 # ///
 """
@@ -15,7 +17,7 @@ Blender / TouchDesigner.
         depth/            frame_000001.exr   (raw depth, depth-camera space, float32 mm)
         depth_aligned/    frame_000001.exr   (depth reprojected into color-camera space)
         color/            frame_000001.png
-        ir/               frame_000001.exr
+        ir/               frame_000001.exr   (optional — pass --ir)
         calibration.json
         manifest.json
 
@@ -47,13 +49,46 @@ import numpy as np
 
 try:
     import pyk4a
-    from pyk4a import CalibrationType, FPS, PyK4APlayback
+    from pyk4a import CalibrationType, FPS, ImageFormat, PyK4APlayback
 except ImportError:
     print("ERROR pyk4a not found - run with: uv run export.py ...", file=sys.stderr)
     sys.exit(1)
 
+try:
+    import OpenEXR
+    import Imath
+except ImportError:
+    print("ERROR openexr not found - run with: uv run export.py ...", file=sys.stderr)
+    sys.exit(1)
+
 TOOL_VERSION = "1.0.0"
 _NOMINAL_FPS = {FPS.FPS_5: 5, FPS.FPS_15: 15, FPS.FPS_30: 30}
+
+
+def write_exr(path: Path, array: np.ndarray) -> None:
+    """Write a single-channel float32 image as EXR (OpenCV wheels lack EXR on Windows)."""
+    data = array.astype(np.float32)
+    if data.ndim == 3:
+        data = data.squeeze()
+    h, w = data.shape
+    header = OpenEXR.Header(w, h)
+    float_chan = Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT))
+    header["channels"] = {"Z": float_chan}
+    exr = OpenEXR.OutputFile(str(path), header)
+    exr.writePixels({"Z": data.tobytes()})
+    del exr
+
+
+def decode_color(color: np.ndarray, color_format) -> np.ndarray:
+    """Decode a playback color buffer to BGR uint8 suitable for PNG export."""
+    if color.ndim == 1 or color_format == ImageFormat.COLOR_MJPG:
+        decoded = cv2.imdecode(color, cv2.IMREAD_COLOR)
+        if decoded is None:
+            raise ValueError("failed to decode MJPEG color frame")
+        return decoded
+    if color.ndim == 3 and color.shape[2] == 4:
+        return cv2.cvtColor(color, cv2.COLOR_BGRA2BGR)
+    return color
 
 
 def log(*parts) -> None:
@@ -74,6 +109,7 @@ def export_take(mkv_path: Path, output_root: Path, want_color: bool, want_ir: bo
 
     calibration = _write_calibration(take_dir, pb)
     color_track_present = bool(pb.configuration.get("color_track_enabled"))
+    color_format = pb.configuration.get("color_format")
     can_align = want_depth_aligned and want_color and color_track_present and calibration is not None
 
     nominal_fps = _NOMINAL_FPS.get(pb.configuration.get("camera_fps"), 30)
@@ -98,21 +134,22 @@ def export_take(mkv_path: Path, output_root: Path, want_color: bool, want_ir: bo
 
         if capture.depth is not None:
             depth_dir.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(depth_dir / f"{fname}.exr"), capture.depth.astype(np.float32))
+            write_exr(depth_dir / f"{fname}.exr", capture.depth)
 
         if can_align and capture.transformed_depth is not None:
             aligned_dir.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(aligned_dir / f"{fname}.exr"), capture.transformed_depth.astype(np.float32))
+            write_exr(aligned_dir / f"{fname}.exr", capture.transformed_depth)
             has_depth_aligned = True
 
         if want_color and capture.color is not None:
             color_dir.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(color_dir / f"{fname}.png"), capture.color)
+            color_bgr = decode_color(capture.color, color_format)
+            cv2.imwrite(str(color_dir / f"{fname}.png"), color_bgr)
             has_color = True
 
         if want_ir and capture.ir is not None:
             ir_dir.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(ir_dir / f"{fname}.exr"), capture.ir.astype(np.float32))
+            write_exr(ir_dir / f"{fname}.exr", capture.ir)
             has_ir = True
 
         log("FRAME", frame_num)
@@ -185,7 +222,7 @@ def main() -> None:
     parser.add_argument("files", nargs="+", type=Path, help="One or more .mkv files to export")
     parser.add_argument("--out", type=Path, required=True, metavar="FOLDER", help="Export root folder")
     parser.add_argument("--no-color", action="store_true", help="Skip color export")
-    parser.add_argument("--no-ir", action="store_true", help="Skip IR export")
+    parser.add_argument("--ir", action="store_true", help="Export IR frames (off by default)")
     parser.add_argument("--no-depth-aligned", action="store_true", help="Skip color-aligned depth export")
     args = parser.parse_args()
 
@@ -198,7 +235,7 @@ def main() -> None:
             export_take(
                 mkv_path, args.out,
                 want_color=not args.no_color,
-                want_ir=not args.no_ir,
+                want_ir=args.ir,
                 want_depth_aligned=not args.no_depth_aligned,
             )
         except Exception as e:

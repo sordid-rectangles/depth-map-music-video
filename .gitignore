@@ -11,6 +11,9 @@ depth-anything/input/
 # Kinect captures
 kinect/output/
 
+# Machine-specific operator config (paths, drives, export folders)
+kinect/operator-config.json
+
 # Machine-specific external drive config
 kinect/scripts/external-output.bat
 
@@ -19,6 +22,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+.uv/
 
 # Dev builds of operator.exe (the deployed binary is kinect/operator.exe, tracked)
 kinect/operator/operator
