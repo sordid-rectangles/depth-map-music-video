@@ -25,6 +25,8 @@ const (
 	screenRecording
 	screenPreset
 	screenOutput
+	screenExportSetup
+	screenExportSession
 )
 
 // ── messages ─────────────────────────────────────────────────────────────────
@@ -60,6 +62,19 @@ type model struct {
 	durationSecs    int
 	presetCursor    int
 	statusMsg       string
+
+	// export session
+	exportSetupStep int
+	takes           []TakeStatus
+	takeCursor      int
+	selected        map[string]bool
+	exporting       bool
+	exportCmd       *exec.Cmd
+	exportChan      chan string
+	currentTakeName string
+	currentFrame    int
+	currentTotal    int
+	exportErr       string
 }
 
 func newModel() model {
@@ -78,6 +93,7 @@ func newModel() model {
 		config:       cfg,
 		input:        ti,
 		presetCursor: cursor,
+		selected:     map[string]bool{},
 	}
 }
 
@@ -119,10 +135,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.userStopped = false
 		return m, nil
+
+	case exportTickMsg:
+		if m.screen != screenExportSession {
+			return m, nil
+		}
+		m.takes = m.applyLiveExportState(scanTakes(m.config.ExportInputDir, m.config.ExportOutputDir))
+		return m, exportTick()
+
+	case exportLineMsg:
+		return m.handleExportLine(string(msg))
+
+	case exportDoneMsg:
+		return m.handleExportDone(msg.err)
 	}
 
 	// Forward other messages (e.g. blink ticks) to the active text input.
-	if m.screen == screenFilename || m.screen == screenDuration || m.screen == screenOutput {
+	if m.screen == screenFilename || m.screen == screenDuration || m.screen == screenOutput || m.screen == screenExportSetup {
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
 		return m, cmd
@@ -145,6 +174,10 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handlePresetKey(msg)
 	case screenOutput:
 		return m.handleOutputKey(msg)
+	case screenExportSetup:
+		return m.handleExportSetupKey(msg)
+	case screenExportSession:
+		return m.handleExportSessionKey(msg)
 	}
 	return m, nil
 }
@@ -169,6 +202,8 @@ func (m model) handleMainKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.input.Focus()
 		m.screen = screenOutput
 		return m, textinput.Blink
+	case "5", "e":
+		return m.openExportSetup()
 	}
 	return m, nil
 }
@@ -349,6 +384,10 @@ func (m model) View() string {
 		return m.viewPreset()
 	case screenOutput:
 		return m.viewOutput()
+	case screenExportSetup:
+		return m.viewExportSetup()
+	case screenExportSession:
+		return m.viewExportSession()
 	}
 	return ""
 }
@@ -369,6 +408,7 @@ func (m model) viewMain() string {
 	b.WriteString(fmt.Sprintf("  %s  Timed record\n", cursorStyle.Render("[2]")))
 	b.WriteString(fmt.Sprintf("  %s  Change preset\n", cursorStyle.Render("[3]")))
 	b.WriteString(fmt.Sprintf("  %s  Set output folder\n", cursorStyle.Render("[4]")))
+	b.WriteString(fmt.Sprintf("  %s  Export takes\n", cursorStyle.Render("[5]")))
 	b.WriteString("\n")
 	b.WriteString(dimStyle.Render("  [q] Quit") + "\n")
 	if m.statusMsg != "" {

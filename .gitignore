@@ -20,6 +20,13 @@ __pycache__/
 .venv/
 venv/
 
+# Dev builds of operator.exe (the deployed binary is kinect/operator.exe, tracked)
+kinect/operator/operator
+kinect/operator/operator.exe
+
+# Local dev docs
+dev-docs/
+
 # OS
 .DS_Store
 Thumbs.db

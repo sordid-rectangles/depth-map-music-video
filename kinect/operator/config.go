@@ -10,6 +10,10 @@ type Config struct {
 	RecorderPath string `json:"recorder_path"`
 	Preset       string `json:"preset"`
 	OutputDir    string `json:"output_dir"`
+
+	ExportInputDir   string `json:"export_input_dir"`
+	ExportOutputDir  string `json:"export_output_dir"`
+	ExportScriptPath string `json:"export_script_path"`
 }
 
 type PresetDef struct {
@@ -41,14 +45,31 @@ func configFilePath() string {
 	return filepath.Join(filepath.Dir(exe), "operator-config.json")
 }
 
+// defaultExportScriptPath points at export/export.py next to the operator
+// binary, mirroring how configFilePath() locates operator-config.json.
+func defaultExportScriptPath() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return filepath.Join("export", "export.py")
+	}
+	return filepath.Join(filepath.Dir(exe), "export", "export.py")
+}
+
 func loadConfig() Config {
 	data, err := os.ReadFile(configFilePath())
 	if err != nil {
-		return defaultConfig
+		cfg := defaultConfig
+		cfg.ExportScriptPath = defaultExportScriptPath()
+		return cfg
 	}
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return defaultConfig
+		cfg = defaultConfig
+		cfg.ExportScriptPath = defaultExportScriptPath()
+		return cfg
+	}
+	if cfg.ExportScriptPath == "" {
+		cfg.ExportScriptPath = defaultExportScriptPath()
 	}
 	return cfg
 }
