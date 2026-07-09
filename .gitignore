@@ -31,6 +31,12 @@ kinect/operator/operator.exe
 # Local dev docs
 dev-docs/
 
+# Local dev/test scripts (headless verification, not shipped)
+blender/dev-scripts/
+
+# Editor/build backup files
+*~
+
 # OS
 .DS_Store
 Thumbs.db
