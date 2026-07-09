@@ -14,7 +14,8 @@ KINECT/
   Cameras/Orbit ← optional starter rig
 ```
 
-Default CloudRender: `Object Info (CloudData) → Mesh to Points → Output`
+Default CloudRender: `Object Info (CloudData) → Mesh to Points → Set Material → Output`
+(the `Set Material` node is required for GN point clouds to show the `Cd` color in Blender 4.2)
 
 ## Dev
 

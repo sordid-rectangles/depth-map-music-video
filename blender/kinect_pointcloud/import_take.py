@@ -12,7 +12,44 @@ from . import color_io, default_render, depth_io, scene_setup
 IMAGE_DEPTH = "kinect_depth_seq"
 ATTR_DEPTH_MM = "depth_mm"
 
+# Datablocks created by older add-on versions that must NOT linger in a .blend.
+# The color SEQUENCE image with use_auto_refresh re-decodes a full-res frame on
+# every frame change and balloons Blender's image cache in the background — the
+# cause of the reboot-level lag. We no longer create these; purge any leftovers.
+_STALE_IMAGE_NAMES = ("kinect_color_seq", "kinect_depth_seq", "_kinect_depth_read")
+_STALE_MATERIAL_NAMES = ("_KinectColorSeqHelper",)
+
 _meta_cache: dict[str, dict] = {}
+
+
+def purge_stale_datablocks() -> list[str]:
+    """Remove orphaned datablocks from old builds (color sequence image, helpers).
+
+    Returns the names removed (for logging). Safe to call on every load.
+    """
+    removed: list[str] = []
+
+    for mat_name in _STALE_MATERIAL_NAMES:
+        mat = bpy.data.materials.get(mat_name)
+        if mat is not None:
+            bpy.data.materials.remove(mat, do_unlink=True)
+            removed.append(mat_name)
+
+    for img_name in _STALE_IMAGE_NAMES:
+        img = bpy.data.images.get(img_name)
+        if img is not None:
+            bpy.data.images.remove(img, do_unlink=True)
+            removed.append(img_name)
+
+    # Also catch any image left in SEQUENCE mode pointing at this take's frames
+    # (defensive: covers renamed leftovers from experimental builds).
+    for img in list(bpy.data.images):
+        if getattr(img, "source", "") == "SEQUENCE" and "kinect" in img.name.lower():
+            name = img.name
+            bpy.data.images.remove(img, do_unlink=True)
+            removed.append(name)
+
+    return removed
 
 
 def _take_path(settings) -> Path | None:
@@ -97,6 +134,7 @@ def get_take_metadata(take_dir: Path) -> dict:
 def clear_take_cache() -> None:
     _meta_cache.clear()
     depth_io.clear_depth_cache()
+    color_io.clear_color_cache()
 
 
 def read_take_metadata(take_dir: Path) -> dict:
@@ -158,19 +196,23 @@ def validate_take_frames(meta: dict) -> None:
 
 
 def load_frame_data(meta: dict, frame: int):
-    """Load depth + color arrays for one timeline frame."""
+    """Load depth + color arrays for one timeline frame (direct decode)."""
     depth_path, color_path = _frame_paths(meta, frame)
     depth_data, w, h = depth_io.read_depth_exr_mm(depth_path)
-
-    seq = color_io.read_color_sequence(frame)
-    if seq is None:
-        color_data, cw, ch = color_io.read_color_png(color_path)
-    else:
-        color_data, cw, ch = seq
-
+    color_data, cw, ch = color_io.read_color_png(color_path)
     if (w, h) != (cw, ch):
         raise RuntimeError(f"Depth {w}x{h} and color {cw}x{ch} resolution mismatch")
     return depth_data, color_data, w, h
+
+
+def load_frame_arrays(meta: dict, frame: int):
+    """Decode depth+color for one frame directly. Used by bake (alias of load_frame_data)."""
+    return load_frame_data(meta, frame)
+
+
+def take_frame_count(meta: dict) -> int:
+    """Authoritative frame count from the take manifest (never a stale setting)."""
+    return max(1, int(meta["manifest"].get("frame_count", 1)))
 
 
 def _unproject_numpy(depth, color, intrinsics, subsample: int, near_mm: float, far_mm: float):
@@ -231,9 +273,26 @@ def _set_float_color_attribute(mesh, name: str, colors) -> None:
     if attr is None:
         mesh.attributes.new(name=name, type="FLOAT_COLOR", domain="POINT")
 
+    # Kinect PNGs are sRGB-encoded. A FLOAT_COLOR attribute is interpreted as
+    # linear, so decode sRGB -> linear here; otherwise Emission + the display
+    # transform push everything bright and desaturated (looks washed-out grey).
+    srgb = np.asarray(colors, dtype=np.float32) / 255.0
+    linear = np.where(
+        srgb <= 0.04045,
+        srgb / 12.92,
+        ((srgb + 0.055) / 1.055) ** 2.4,
+    ).astype(np.float32)
+
     rgba = np.ones((n, 4), dtype=np.float32)
-    rgba[:, :3] = np.asarray(colors, dtype=np.float32) / 255.0
+    rgba[:, :3] = linear
     mesh.attributes[name].data.foreach_set("color", rgba.ravel())
+
+    # Make Cd the active/render color so Solid-mode "Color: Attribute" shows it too.
+    try:
+        mesh.color_attributes.active_color_name = name
+        mesh.color_attributes.render_color_index = mesh.color_attributes.find(name)
+    except Exception:
+        pass
 
 
 def _set_float_attribute(mesh, name: str, values) -> None:
@@ -252,6 +311,46 @@ def _set_float_attribute(mesh, name: str, values) -> None:
     mesh.attributes[name].data.foreach_set("value", np.asarray(values, dtype=np.float32))
 
 
+def _rebuild_from_cache(context: bpy.types.Context) -> bool:
+    """Fast playback path: stream pre-baked arrays; no decode/unproject."""
+    global _last_coords
+    from . import bake
+
+    cache = bake.get_active_cache()
+    if cache is None:
+        return False
+
+    scene = context.scene
+    settings = scene.kinect_take
+    data = cache.frame(scene.frame_current)
+    if data is None:
+        return False
+
+    coords, colors, depth_attr = data
+    cloud_data, cloud_render = scene_setup.ensure_scene_layout(scene)
+    _last_coords = coords
+    _write_mesh_from_arrays(cloud_data, coords, colors, depth_attr, settings)
+
+    if not settings.data_only:
+        if default_render.has_default_render(cloud_render):
+            default_render.sync_render_point_size(cloud_render, settings.point_size)
+        else:
+            default_render.setup_default_cloud_render(cloud_render, cloud_data, settings.point_size)
+        default_render.ensure_render_material(cloud_render)
+        default_render.ensure_set_material_node(cloud_render)
+    else:
+        cloud_data.display_type = "WIRE"
+        cloud_data.hide_viewport = False
+        cloud_data.hide_render = True
+        cloud_render.hide_viewport = True
+
+    settings.status_message = (
+        f"Frame {scene.frame_current}/{settings.frame_count} — "
+        f"{len(coords):,} points (baked)"
+    )
+    return True
+
+
 def rebuild_cloud_data(context: bpy.types.Context) -> None:
     global _last_coords
     scene = context.scene
@@ -261,27 +360,28 @@ def rebuild_cloud_data(context: bpy.types.Context) -> None:
         settings.status_message = "No take loaded"
         return
 
+    if settings.use_baked_cache and _rebuild_from_cache(context):
+        return
+
+    import numpy as np
+
     meta = get_take_metadata(take_dir)
     frame = scene.frame_current
-    depth_data, color_data, w, h = load_frame_data(meta, frame)
-
-    intrinsics = scaled_intrinsics(
-        meta["calibration"]["color"],
-        w,
-        h,
-        settings.width_scale,
-    )
-
     cloud_data, cloud_render = scene_setup.ensure_scene_layout(scene)
 
-    coords, colors, depth_attr = _unproject_numpy(
-        depth_data,
-        color_data,
-        intrinsics,
-        settings.subsample,
-        settings.near_mm,
-        settings.far_mm,
-    )
+    try:
+        depth_data, color_data, w, h = load_frame_data(meta, frame)
+        intrinsics = scaled_intrinsics(
+            meta["calibration"]["color"], w, h, settings.width_scale
+        )
+        coords, colors, depth_attr = _unproject_numpy(
+            depth_data, color_data, intrinsics,
+            settings.subsample, settings.near_mm, settings.far_mm,
+        )
+    except (FileNotFoundError, RuntimeError):
+        coords = np.zeros((0, 3), dtype=np.float32)
+        colors = np.zeros((0, 3), dtype=np.uint8)
+        depth_attr = np.zeros((0,), dtype=np.float32)
     _last_coords = coords
     _write_mesh_from_arrays(cloud_data, coords, colors, depth_attr, settings)
 
@@ -292,6 +392,8 @@ def rebuild_cloud_data(context: bpy.types.Context) -> None:
             default_render.setup_default_cloud_render(
                 cloud_render, cloud_data, settings.point_size
             )
+        default_render.ensure_render_material(cloud_render)
+        default_render.ensure_set_material_node(cloud_render)
     else:
         cloud_data.display_type = "WIRE"
         cloud_data.hide_viewport = False
@@ -360,16 +462,11 @@ def load_take(context: bpy.types.Context) -> None:
     scene["kinect_loading_take"] = True
     try:
         clear_take_cache()
+        purge_stale_datablocks()
         meta = read_take_metadata(take_dir)
         validate_take_frames(meta)
         settings.take_path = str(take_dir.resolve())
         apply_timeline_from_manifest(settings, meta["manifest"], scene)
-
-        color_io.register_color_sequence(
-            meta["color_dir"] / "frame_000001.png",
-            settings.frame_count,
-            frame_start=scene.frame_start,
-        )
 
         depth_data, color_data, w, h = load_frame_data(meta, scene.frame_current)
         settings.subsample = _default_subsample_for_resolution(w, h)
@@ -377,6 +474,19 @@ def load_take(context: bpy.types.Context) -> None:
         settings.far_mm = 6000.0
         settings.point_size = 0.5
         settings.width_scale = 1.0
+
+        from . import bake
+
+        frame_count = take_frame_count(meta)
+        if bake.is_cache_valid(take_dir, settings, frame_count):
+            bake.attach_cache(take_dir)
+            settings.bake_status = "Baked cache loaded — playback is fast"
+        else:
+            bake.detach_cache()
+            if bake.read_manifest(take_dir) is not None:
+                settings.bake_status = "Cache is stale (params changed) — re-bake"
+            else:
+                settings.bake_status = "Not baked — click Bake Take for fast playback"
 
         scene_setup.ensure_scene_layout(scene)
         rebuild_cloud_data(context)

@@ -18,6 +18,16 @@ def _rebuild_cloud(self, context):
     import_take.rebuild_cloud_data(context)
 
 
+def _apply_orbit(self, context):
+    """Move the Orbit camera live when its sliders change."""
+    from . import scene_setup
+
+    try:
+        scene_setup.apply_orbit_camera(self)
+    except Exception:
+        pass
+
+
 class KinectTakeSettings(bpy.types.PropertyGroup):
     take_path: StringProperty(
         name="Take Folder",
@@ -35,18 +45,21 @@ class KinectTakeSettings(bpy.types.PropertyGroup):
     status_message: StringProperty(name="Status", default="", options={"HIDDEN"})
 
     data_only: BoolProperty(
-        name="Data Only Mode",
+        name="Debug: show raw data",
         description=(
-            "Update CloudData attributes only; no add-on viewport styling. "
-            "Use CloudRender for all look development"
+            "Show the raw CloudData mesh as a wireframe instead of the styled "
+            "CloudRender. For debugging only"
         ),
         default=False,
         update=_rebuild_cloud,
     )
 
     subsample: IntProperty(
-        name="Subsample",
-        description="Pixel stride when building the point cloud (1 = full resolution)",
+        name="Point Spacing",
+        description=(
+            "Pixels between points. Higher = fewer points and faster playback; "
+            "lower = denser cloud. 12–16 is smooth, 8 is dense. Re-bake after changing"
+        ),
         default=3,
         min=1,
         max=16,
@@ -54,8 +67,8 @@ class KinectTakeSettings(bpy.types.PropertyGroup):
     )
 
     near_mm: FloatProperty(
-        name="Near (mm)",
-        description="Ignore depth closer than this (millimeters)",
+        name="Near",
+        description="Hide points closer than this to the camera (millimeters). Re-bake after changing",
         default=600.0,
         min=0.0,
         soft_max=3000.0,
@@ -63,8 +76,8 @@ class KinectTakeSettings(bpy.types.PropertyGroup):
     )
 
     far_mm: FloatProperty(
-        name="Far (mm)",
-        description="Ignore depth farther than this (millimeters). 0 = no far clip",
+        name="Far",
+        description="Hide points farther than this (millimeters). 0 = no far limit. Re-bake after changing",
         default=6000.0,
         min=0.0,
         soft_max=12000.0,
@@ -73,7 +86,7 @@ class KinectTakeSettings(bpy.types.PropertyGroup):
 
     point_size: FloatProperty(
         name="Point Size",
-        description="Point radius on CloudRender (Set Point Radius node); raw CloudData preview if default render is removed",
+        description="Dot size in the default CloudRender look",
         default=0.5,
         min=0.01,
         soft_max=5.0,
@@ -82,7 +95,7 @@ class KinectTakeSettings(bpy.types.PropertyGroup):
 
     width_scale: FloatProperty(
         name="Width Scale",
-        description="Fine-tune horizontal aspect if the cloud looks squashed",
+        description="Fine-tune horizontal aspect if the cloud looks squashed or stretched. Re-bake after changing",
         default=1.0,
         min=0.5,
         soft_max=2.0,
@@ -90,14 +103,30 @@ class KinectTakeSettings(bpy.types.PropertyGroup):
     )
 
     update_on_frame_change: BoolProperty(
-        name="Update on Frame Change",
-        description="Rebuild CloudData when the timeline frame changes",
+        name="Follow Timeline",
+        description="Update the cloud as the timeline plays. Turn off to hold one frame while posing the camera",
         default=True,
+    )
+
+    use_baked_cache: BoolProperty(
+        name="Use Baked Cache",
+        description=(
+            "Play back from the baked point cache when available (fast). "
+            "Uncheck to force live decode + unproject from EXR/PNG"
+        ),
+        default=True,
+        update=_rebuild_cloud,
+    )
+
+    bake_status: StringProperty(
+        name="Bake Status",
+        default="",
+        options={"HIDDEN"},
     )
 
     auto_rebuild: BoolProperty(
         name="Auto Rebuild",
-        description="Rebuild CloudData when cloud parameters change",
+        description="Rebuild the cloud automatically when you change Density / Near / Far",
         default=True,
     )
 
@@ -108,11 +137,21 @@ class KinectTakeSettings(bpy.types.PropertyGroup):
             ("FREE", "Free", "Do not drive any camera from the add-on"),
         ),
         default="ORBIT",
+        update=_apply_orbit,
     )
 
-    orbit_pivot_x: FloatProperty(name="Pivot X", default=0.0, unit="LENGTH")
-    orbit_pivot_y: FloatProperty(name="Pivot Y", default=0.0, unit="LENGTH")
-    orbit_pivot_z: FloatProperty(name="Pivot Z", default=0.0, unit="LENGTH")
-    orbit_distance: FloatProperty(name="Distance", default=3.0, min=0.1, soft_max=20.0, unit="LENGTH")
-    orbit_azimuth: FloatProperty(name="Azimuth", default=0.0, soft_min=-180.0, soft_max=180.0, subtype="ANGLE")
-    orbit_elevation: FloatProperty(name="Elevation", default=0.785398, soft_min=-1.5708, soft_max=1.5708, subtype="ANGLE")
+    orbit_pivot_x: FloatProperty(
+        name="Pivot X", description="Shift the orbit center left / right",
+        default=0.0, unit="LENGTH", update=_apply_orbit,
+    )
+    orbit_pivot_y: FloatProperty(
+        name="Pivot Y", description="Shift the orbit center forward / back (toward or away from camera)",
+        default=0.0, unit="LENGTH", update=_apply_orbit,
+    )
+    orbit_pivot_z: FloatProperty(
+        name="Pivot Z", description="Shift the orbit center up / down",
+        default=0.0, unit="LENGTH", update=_apply_orbit,
+    )
+    orbit_distance: FloatProperty(name="Distance", default=3.0, min=0.1, soft_max=20.0, unit="LENGTH", update=_apply_orbit)
+    orbit_azimuth: FloatProperty(name="Azimuth", default=0.0, soft_min=-180.0, soft_max=180.0, subtype="ANGLE", update=_apply_orbit)
+    orbit_elevation: FloatProperty(name="Elevation", default=0.785398, soft_min=-1.5708, soft_max=1.5708, subtype="ANGLE", update=_apply_orbit)

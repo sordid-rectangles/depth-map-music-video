@@ -91,13 +91,69 @@ def setup_default_cloud_render(
         mesh_to_points.inputs["Radius"].default_value = point_size_to_radius(point_size)
         mesh_to_points.label = "Point Size (replace me for stylized looks)"
 
+        # Required: GN-generated point clouds do NOT inherit the object's material
+        # slot in Blender 4.2 — without an explicit Set Material they render with
+        # no material (black / default grey). This is what shows the Cd color.
+        set_material = nodes.new("GeometryNodeSetMaterial")
+        set_material.location = (200, 0)
+        set_material.inputs["Material"].default_value = _ensure_default_material()
+
         links.new(obj_info.outputs["Geometry"], mesh_to_points.inputs["Mesh"])
-        links.new(mesh_to_points.outputs["Points"], output.inputs["Geometry"])
+        links.new(mesh_to_points.outputs["Points"], set_material.inputs["Geometry"])
+        links.new(set_material.outputs["Geometry"], output.inputs["Geometry"])
 
         mod = cloud_render.modifiers.new(MODIFIER_NAME, "NODES")
         mod.node_group = tree
 
     finalize_cloud_render_object(cloud_render, cloud_data)
+
+
+def ensure_set_material_node(cloud_render: bpy.types.Object | None) -> None:
+    """Insert a Set Material node into the default GN tree if it's missing.
+
+    Repairs scenes built by older versions whose stack was
+    Object Info -> Mesh to Points -> Output (no Set Material), which renders the
+    point cloud with no material (grey) in Blender 4.2.
+    """
+    if not has_default_render(cloud_render):
+        return
+    mod = cloud_render.modifiers.get(MODIFIER_NAME)
+    tree = mod.node_group
+    nodes = tree.nodes
+    links = tree.links
+
+    if any(n.bl_idname == "GeometryNodeSetMaterial" for n in nodes):
+        return
+
+    m2p = next((n for n in nodes if n.bl_idname == "GeometryNodeMeshToPoints"), None)
+    out = next((n for n in nodes if n.bl_idname == "NodeGroupOutput"), None)
+    if m2p is None or out is None:
+        return  # customized stack — leave it alone
+
+    set_material = nodes.new("GeometryNodeSetMaterial")
+    set_material.location = (m2p.location.x + 150, m2p.location.y)
+    set_material.inputs["Material"].default_value = _ensure_default_material()
+
+    for link in list(links):
+        if link.from_node == m2p and link.to_node == out:
+            links.remove(link)
+    links.new(m2p.outputs["Points"], set_material.inputs["Geometry"])
+    links.new(set_material.outputs["Geometry"], out.inputs["Geometry"])
+
+
+def ensure_render_material(cloud_render: bpy.types.Object | None) -> None:
+    """Guarantee CloudRender has the color material when it has no material at all.
+
+    Non-destructive: if the artist already assigned a material we leave it alone.
+    Fixes scenes built by older versions where CloudRender ended up material-less
+    and rendered as flat grey.
+    """
+    if cloud_render is None:
+        return
+    if not cloud_render.data.materials:
+        cloud_render.data.materials.append(_ensure_default_material())
+    elif cloud_render.material_slots and cloud_render.material_slots[0].material is None:
+        cloud_render.material_slots[0].material = _ensure_default_material()
 
 
 def finalize_cloud_render_object(cloud_render: bpy.types.Object, cloud_data: bpy.types.Object) -> None:

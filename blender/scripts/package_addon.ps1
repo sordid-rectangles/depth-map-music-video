@@ -15,10 +15,18 @@ if (-not (Test-Path (Join-Path $addon "__init__.py"))) {
 }
 
 Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path (Join-Path $staging "kinect_pointcloud") | Out-Null
-Copy-Item -Path (Join-Path $addon "*") -Destination (Join-Path $staging "kinect_pointcloud") -Recurse -Force
+$dest = Join-Path $staging "kinect_pointcloud"
+New-Item -ItemType Directory -Path $dest | Out-Null
+Copy-Item -Path (Join-Path $addon "*") -Destination $dest -Recurse -Force
+
+# Drop Python bytecode caches so the handoff zip is clean.
+Get-ChildItem -Path $dest -Recurse -Include "__pycache__" -Directory -Force |
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path $dest -Recurse -Include "*.pyc" -File -Force |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+
 Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
-Compress-Archive -Path (Join-Path $staging "kinect_pointcloud") -DestinationPath $zipPath -Force
+Compress-Archive -Path $dest -DestinationPath $zipPath -Force
 Remove-Item $staging -Recurse -Force
 
 Write-Host "Created $zipPath"

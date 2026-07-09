@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Kinect Point Cloud",
     "author": "depth-map-music-video",
-    "version": (0, 1, 15),
+    "version": (0, 3, 0),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Kinect",
     "description": "Load Kinect depth takes as timed point clouds for stylized rendering",
@@ -9,7 +9,7 @@ bl_info = {
 }
 
 # Shown in the sidebar so you can confirm Blender loaded this build after install.
-ADDON_BUILD = "2026-07-08-scale-seq"
+ADDON_BUILD = "2026-07-09-purge-stale"
 
 import bpy
 
@@ -22,11 +22,14 @@ classes = (
     operators.KINECT_OT_reload_take,
     operators.KINECT_OT_rebuild_cloud,
     operators.KINECT_OT_frame_to_cloud,
+    operators.KINECT_OT_look_through_orbit,
+    operators.KINECT_OT_bake_take,
     operators.KINECT_OT_reset_default_render,
     panel.KINECT_PT_main,
     panel.KINECT_PT_cloud,
-    panel.KINECT_PT_camera,
     panel.KINECT_PT_playback,
+    panel.KINECT_PT_camera,
+    panel.KINECT_PT_advanced,
 )
 
 
