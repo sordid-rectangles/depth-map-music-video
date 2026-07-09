@@ -28,6 +28,7 @@ Flags (color, depth, and depth_aligned export by default):
 | `--no-color` | Skip color frames |
 | `--ir` | Include IR frames (off by default) |
 | `--no-depth-aligned` | Skip color-aligned depth (also skipped automatically if the recording has no color track, e.g. the `Depth Ref` preset) |
+| `--max-frames N` | Stop after N frames (quick test / partial export) |
 
 ## Output layout
 
@@ -113,6 +114,16 @@ DONE
 ```
 
 Errors are reported as `ERROR <message>` and exit with a non-zero status.
+
+## Downstream playback notes
+
+TouchDesigner v5 testing (Jul 2026) on raw EXR + PNG sequences:
+
+- GPU point-cloud reconstruction is cheap (~0.3 ms/frame).
+- Disk I/O dominates: ~60–65 ms/frame best case (~15 fps), not 30 fps.
+- **30 fps preview** likely needs proxy video files baked from these sequences (see [`touchdesigner/docs/blender-parity.md`](../../touchdesigner/docs/blender-parity.md#playback--performance)).
+
+Blender should use native image sequences rather than TD's per-frame file-reload pattern. Next agent work: Blender playback options.
 
 ## Status
 

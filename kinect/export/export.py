@@ -95,7 +95,14 @@ def log(*parts) -> None:
     print(*parts, flush=True)
 
 
-def export_take(mkv_path: Path, output_root: Path, want_color: bool, want_ir: bool, want_depth_aligned: bool) -> None:
+def export_take(
+    mkv_path: Path,
+    output_root: Path,
+    want_color: bool,
+    want_ir: bool,
+    want_depth_aligned: bool,
+    max_frames: int | None = None,
+) -> None:
     take_name = mkv_path.stem
     take_dir = output_root / take_name
 
@@ -128,6 +135,8 @@ def export_take(mkv_path: Path, output_root: Path, want_color: bool, want_ir: bo
             break
         if capture is None:
             break
+        if max_frames is not None and frame_num >= max_frames:
+            break
 
         frame_num += 1
         fname = f"frame_{frame_num:06d}"
@@ -157,8 +166,8 @@ def export_take(mkv_path: Path, output_root: Path, want_color: bool, want_ir: bo
     duration_usec = pb.length
     pb.close()
 
-    fps = None
-    if duration_usec and duration_usec > 0:
+    fps = nominal_fps
+    if max_frames is None and duration_usec and duration_usec > 0:
         fps = round(frame_num / (duration_usec / 1_000_000))
 
     _write_manifest(
@@ -224,6 +233,7 @@ def main() -> None:
     parser.add_argument("--no-color", action="store_true", help="Skip color export")
     parser.add_argument("--ir", action="store_true", help="Export IR frames (off by default)")
     parser.add_argument("--no-depth-aligned", action="store_true", help="Skip color-aligned depth export")
+    parser.add_argument("--max-frames", type=int, metavar="N", help="Stop after N frames (for quick tests)")
     args = parser.parse_args()
 
     for mkv_path in args.files:
@@ -237,6 +247,7 @@ def main() -> None:
                 want_color=not args.no_color,
                 want_ir=args.ir,
                 want_depth_aligned=not args.no_depth_aligned,
+                max_frames=args.max_frames,
             )
         except Exception as e:
             log("ERROR", str(e))
