@@ -1,0 +1,8 @@
+# TouchDesigner auto-backups (created on every save)
+**/Backup/
+
+# Local render / screen recordings
+**/Movie/
+
+# Numbered save-as copies — keep the canonical pointcloud-viewer-vN.toe per folder
+*.*.toe
