@@ -6,6 +6,8 @@ Two parallel pipelines for depth-aware footage:
 |--------|-------------|
 | [`kinect/`](kinect/) | Recording tool for the Azure Kinect DK — for on-set operators |
 | [`depth-anything/`](depth-anything/) | Processing regular camera footage through Depth Anything to generate depth maps |
+| [`touchdesigner/`](touchdesigner/) | TouchDesigner viewer for exported Kinect depth takes — see [`touchdesigner/docs/`](touchdesigner/docs/) |
+| [`blender/`](blender/) | Blender add-on for Kinect point clouds — artists: [`blender/ARTIST_GUIDE.md`](blender/ARTIST_GUIDE.md) |
 
 ## Quick start
 
