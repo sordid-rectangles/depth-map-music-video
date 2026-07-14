@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Kinect Point Cloud",
     "author": "depth-map-music-video",
-    "version": (0, 3, 0),
+    "version": (0, 3, 1),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Kinect",
     "description": "Load Kinect depth takes as timed point clouds for stylized rendering",
@@ -9,7 +9,7 @@ bl_info = {
 }
 
 # Shown in the sidebar so you can confirm Blender loaded this build after install.
-ADDON_BUILD = "2026-07-09-purge-stale"
+ADDON_BUILD = "2026-07-14-persistent-frame-handler"
 
 import bpy
 
