@@ -19,6 +19,7 @@ Files are named `take-01-20260622-175023.mkv` and saved to the configured output
 | `2` | Timed record (auto-stops) |
 | `3` | Change recording preset |
 | `4` | Set output folder |
+| `5` | Export takes (image sequences for Blender/TouchDesigner) |
 | `q` | Quit |
 
 ## Full operator guide
