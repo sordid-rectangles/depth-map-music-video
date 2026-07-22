@@ -19,6 +19,9 @@ Launch `operator.exe`, press **4**, and paste in the path to the recording folde
 **3. Choose a recording preset (optional).**
 Press **3** in the menu to select a preset. The default is **Long Take** (1080p / 30fps).
 
+**4. Install `uv` (only needed for exporting takes).**
+Exporting takes to image sequences runs a Python script via [`uv`](https://docs.astral.sh/uv/) — install it once (e.g. `winget install astral-sh.uv`). Not needed just to record.
+
 ---
 
 ## On set
@@ -62,6 +65,30 @@ Change preset with **3** in the main menu. Takes effect immediately — no resta
 
 ---
 
+## Exporting takes
+
+Converts recorded `.mkv` takes into the depth/color image sequences Blender and TouchDesigner use.
+
+1. Press **5** (or `e`) from the main menu.
+2. **Input folder** — where the `.mkv` takes live (usually the external drive from set).
+3. **Output folder** — where the exported image sequences are written.
+4. You'll see every take found in the input folder, marked:
+   - `pending` — not exported yet
+   - `exported` — already done, matches what's in the output folder
+   - `stale (re-recorded)` — a take with this name was exported before, but the source file has since changed (re-shot under the same take number)
+5. Select takes and export:
+   - `↑↓` / `j` `k` — move
+   - `Space` — select/deselect a take
+   - `a` — select all pending + stale takes
+   - `x` — export the selected takes (or just the highlighted one if nothing's selected)
+   - `r` — rescan the input folder
+   - `Esc` — back to the main menu
+6. Progress shows per-take as `exporting N/total`. Large takes can take a while — let it finish rather than closing the window.
+
+Requires `uv` installed (see one-time setup above) and the Azure Kinect SDK.
+
+---
+
 ## Troubleshooting
 
 | Problem | Try this |
@@ -71,6 +98,8 @@ Change preset with **3** in the main menu. Takes effect immediately — no resta
 | Black color image | Open **Azure Kinect Viewer** (`k4aviewer.exe` in the SDK tools folder) and adjust exposure before recording. |
 | "File already exists" | The tool detected a name collision — edit the take number and try again. |
 | Recording stops immediately | Check available disk space on the output drive. |
+| Export fails immediately | Confirm `uv` is installed and on PATH (open a new terminal after installing). |
+| Export errors partway through | Usually a bad/incomplete `.mkv` (drive unplugged during recording, etc.) — check the error message shown on screen. |
 
 ---
 
